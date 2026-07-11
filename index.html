@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cartas Malucas — Duelo de Personagens</title>
+<style>
+  :root{
+    --bg:#1b1024; --bg2:#26183a; --panel:#2f1f47; --panel2:#3a2757;
+    --accent:#ff5da2; --accent2:#5dd6ff; --gold:#ffd166; --green:#6bdc7a; --red:#ff6b6b;
+    --text:#f3ecff; --muted:#b7a7d6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Trebuchet MS', Verdana, sans-serif; color:var(--text);
+    background:radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg));
+    min-height:100vh; padding:16px;
+  }
+  h1{text-align:center; margin:4px 0 2px; font-size:1.6em; letter-spacing:.5px;
+     text-shadow:0 0 12px rgba(255,93,162,.6);}
+  .subtitle{text-align:center; color:var(--muted); margin-bottom:14px; font-size:.9em;}
+  .top-bar{display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:14px; flex-wrap:wrap;}
+  .pill{background:var(--panel); border:1px solid #ffffff22; border-radius:999px; padding:6px 14px; font-size:.85em; display:inline-block;}
+  button.newgame{background:var(--red); border:none; color:white; padding:8px 16px; border-radius:999px; cursor:pointer; font-weight:bold;}
+  button.newgame:hover{filter:brightness(1.1);}
+
+  /* setup screen */
+  .setup-screen{max-width:520px; margin:30px auto; background:var(--panel); border-radius:18px; padding:24px; text-align:center;}
+  .setup-screen h2{margin-top:0;}
+  .setup-form{display:flex; flex-direction:column; gap:12px; margin-bottom:10px;}
+  .setup-form label{text-align:left; font-size:.85em; color:var(--muted); display:flex; flex-direction:column; gap:4px;}
+  .setup-form input{padding:10px 12px; border-radius:10px; border:1px solid #ffffff33; background:#00000033; color:var(--text); font-size:1em;}
+  .setup-form input:focus{outline:2px solid var(--accent2);}
+  .rarity-legend{display:flex; gap:8px; justify-content:center; margin:12px 0; flex-wrap:wrap; font-size:.75em;}
+  .rarity-chip{padding:2px 8px; border-radius:8px; font-weight:bold;}
+
+  .pick-screen{max-width:900px; margin:30px auto; background:var(--panel); border-radius:18px; padding:24px; text-align:center;}
+  .pick-screen h2{margin-top:0;}
+  .pick-grid{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:16px;}
+  .pick-card{width:220px; text-align:left;}
+
+  .board{display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:1200px; margin:0 auto;}
+  @media (max-width:820px){ .board{grid-template-columns:1fr;} }
+
+  .player-panel{background:var(--panel); border-radius:16px; padding:14px; border:2px solid transparent;}
+  .player-panel.active-turn{border-color:var(--gold); box-shadow:0 0 18px rgba(255,209,102,.35);}
+  .player-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .player-header b{font-size:1.05em;}
+  .turn-tag{font-size:.75em; background:var(--gold); color:#332200; padding:2px 8px; border-radius:8px; font-weight:bold;}
+
+  .active-card{background:var(--panel2); border-radius:14px; padding:12px; margin-bottom:10px; position:relative;}
+  .active-card .emoji{font-size:2.4em;}
+  .card-name{font-weight:bold; font-size:1.05em; display:inline-block;}
+  .rarity-tag{font-size:.65em; padding:2px 6px; border-radius:6px; font-weight:bold; margin-left:6px; vertical-align:middle;}
+  .stat-row{display:flex; gap:10px; margin:6px 0; font-size:.85em; flex-wrap:wrap;}
+  .stat{background:#00000033; padding:3px 8px; border-radius:6px;}
+  .hpbar-wrap{background:#00000055; border-radius:8px; height:14px; margin:6px 0; overflow:hidden;}
+  .hpbar{height:100%; background:linear-gradient(90deg, var(--green), #3fae4f); transition:width .3s;}
+  .hpbar.low{background:linear-gradient(90deg, var(--red), #b23a3a);}
+  .special-box{font-size:.78em; color:var(--muted); margin-top:6px; line-height:1.35;}
+  .special-box b{color:var(--accent2);}
+  .status-tags{display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;}
+  .status-tag{font-size:.7em; background:#00000044; padding:2px 6px; border-radius:6px;}
+
+  .bench{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+  .bench-card{background:#00000033; border-radius:10px; padding:6px 8px; font-size:.75em; text-align:center; min-width:64px; cursor:default;}
+  .bench-card.selectable{cursor:pointer; border:2px solid var(--accent2);}
+  .bench-card.selectable:hover{background:#00000055;}
+  .bench-card .emoji{font-size:1.4em; display:block;}
+  .bench-card.dead{opacity:.35; text-decoration:line-through;}
+
+  .inventory{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+  .item-card{background:#00000033; border-radius:10px; padding:6px 8px; font-size:.72em; text-align:center; min-width:70px;}
+  .item-card.selectable{cursor:pointer; border:2px solid var(--gold);}
+  .item-card.selectable:hover{background:#00000055;}
+  .item-card .emoji{font-size:1.3em; display:block;}
+  .equipped-list{font-size:.7em; color:var(--muted); margin-top:4px;}
+
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .actions button{flex:1; min-width:100px; padding:8px 6px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size:.85em;}
+  .btn-attack{background:var(--red); color:white;}
+  .btn-swap{background:var(--accent2); color:#00212b;}
+  .btn-item{background:var(--gold); color:#332200;}
+  .btn-cancel{background:#555; color:white;}
+  .actions button:disabled{opacity:.35; cursor:not-allowed;}
+  .actions button:hover:not(:disabled){filter:brightness(1.12);}
+
+  .hint{font-size:.78em; color:var(--muted); margin-top:6px; min-height:1.2em;}
+
+  .log-wrap{max-width:1200px; margin:16px auto 0; background:var(--panel); border-radius:14px; padding:12px 14px; max-height:220px; overflow-y:auto;}
+  .log-wrap h3{margin:0 0 8px; font-size:.9em; color:var(--accent2);}
+  .log-line{font-size:.82em; margin:3px 0; color:var(--text);}
+  .log-line.special{color:var(--gold);}
+  .log-line.dmg{color:var(--red);}
+  .log-line.heal{color:var(--green);}
+
+  .gameover{max-width:1200px; margin:14px auto; text-align:center; background:var(--panel2);
+    border-radius:14px; padding:16px; font-size:1.2em; border:2px solid var(--gold);}
+
+  .history-box{background:var(--panel2); border-radius:14px; padding:16px; margin-top:16px; text-align:left;}
+  .history-box h3{margin:0 0 8px; text-align:center; color:var(--gold);}
+  .podium{display:flex; justify-content:center; gap:14px; margin:12px 0; flex-wrap:wrap;}
+  .podium-item{background:#00000033; border-radius:10px; padding:10px 14px; text-align:center; font-size:.85em; min-width:110px;}
+  .medal{font-size:1.6em; display:block;}
+  .rank-list{font-size:.8em; color:var(--muted); padding-left:18px;}
+  details summary{cursor:pointer; font-size:.8em; color:var(--accent2); margin-top:6px;}
+</style>
+</head>
+<body>
+<h1>🃏 Cartas Malucas — Duelo de Personagens 🃏</h1>
+<div class="subtitle">Dois jogadores, um PC. Ataque, troque de personagem, use itens malucos e ative poderes especiais bizarros!</div>
+
+<div id="setupScreen" class="setup-screen">
+  <h2>⚔️ Nova Batalha</h2>
+  <div class="setup-form">
+    <label>Nome do Jogador 1
+      <input id="p1NameInput" type="text" maxlength="20" placeholder="Jogador 1">
+    </label>
+    <label>Nome do Jogador 2
+      <input id="p2NameInput" type="text" maxlength="20" placeholder="Jogador 2">
+    </label>
+    <button class="newgame" onclick="startFromSetup()">⚔️ Começar Batalha</button>
+  </div>
+  <div class="rarity-legend">
+    <span class="rarity-chip" style="background:#9fb0c9;color:#111;">Comum</span>
+    <span class="rarity-chip" style="background:#5dd6ff;color:#00212b;">Raro</span>
+    <span class="rarity-chip" style="background:#ffd166;color:#332200;">Lendário</span>
+  </div>
+  <div id="historyPanel"></div>
+</div>
+
+<div id="pickScreen" class="pick-screen" style="display:none;">
+  <h2>🎯 Escolha o personagem inicial — <span id="pickPlayerName"></span></h2>
+  <p class="hint" style="text-align:center;">Cada jogador tem 3 personagens. Escolha qual entra em campo primeiro — os outros ficam no banco pra trocar depois.</p>
+  <div id="pickBoard" class="pick-grid"></div>
+</div>
+
+<div id="gameArea" style="display:none;">
+  <div class="top-bar">
+    <div class="pill">Rodada: <b id="roundNum">1</b></div>
+    <button class="newgame" onclick="backToSetup()">🔄 Nova Batalha</button>
+  </div>
+  <div class="board" id="board"></div>
+  <div id="gameoverBox"></div>
+  <div class="log-wrap">
+    <h3>📜 Registro da Batalha</h3>
+    <div id="logBox"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- RARIDADE ---------------- */
+
+const RARITY = {
+  comum:   {label:'Comum',    weight:10, color:'#9fb0c9', textColor:'#111'},
+  raro:    {label:'Raro',     weight:4,  color:'#5dd6ff', textColor:'#00212b'},
+  lendario:{label:'Lendário', weight:1,  color:'#ffd166', textColor:'#332200'},
+};
+
+/* ---------------- DADOS DO JOGO: PERSONAGENS ---------------- */
+
+const CHAR_POOL = [
+  {id:'batata', name:'Sr. Batata Ninja', emoji:'🥔', atk:5, def:3, hp:20, rarity:'comum',
+    special:{name:'Fritura Suprema', desc:'Dobra o dano do ataque atual.', trigger:'seu HP atual é um número PAR'}},
+  {id:'vovo', name:'Vovó Fúria', emoji:'👵', atk:7, def:2, hp:18, rarity:'comum',
+    special:{name:'Chinelada Divina', desc:'Ignora toda a defesa do oponente.', trigger:'a rodada atual é múltipla de 3'}},
+  {id:'pombo', name:'Pombo Assassino', emoji:'🐦', atk:4, def:4, hp:16, rarity:'comum',
+    special:{name:'Bicada Relâmpago', desc:'Ataca duas vezes seguidas.', trigger:'o oponente tem algum item equipado'}},
+  {id:'capivara', name:'Capivara Zen', emoji:'🦫', atk:3, def:6, hp:22, rarity:'comum',
+    special:{name:'Paz Absoluta', desc:'Cura 5 de HP ao atacar.', trigger:'sua última ação NÃO foi um ataque'}},
+  {id:'robo', name:'Robô Aspirador Rebelde', emoji:'🤖', atk:6, def:3, hp:17, rarity:'comum',
+    special:{name:'Sugou Tudo', desc:'Rouba 3 de HP do oponente.', trigger:'a soma dos ataques dos dois personagens é ÍMPAR'}},
+  {id:'gato', name:'Gato Advogado', emoji:'🐱', atk:5, def:5, hp:19, rarity:'comum',
+    special:{name:'Objeção!', desc:'Anula o próximo ataque do oponente.', trigger:'o oponente trocou de personagem no turno anterior'}},
+  {id:'unicornio', name:'Unicórnio Tóxico', emoji:'🦄', atk:6, def:4, hp:18, rarity:'comum',
+    special:{name:'Arco-íris Venenoso', desc:'Envenena o oponente (3 dano por 2 turnos).', trigger:'a rodada atual é PAR'}},
+  {id:'fantasma', name:'Fantasma Estagiário', emoji:'👻', atk:4, def:2, hp:15, rarity:'comum',
+    special:{name:'Susto Inesperado', desc:'O oponente fica assustado e perde a próxima jogada.', trigger:'o dado da sorte (1-6) sair 6 ou mais'}},
+  {id:'dragao', name:'Dragão de Meia-idade', emoji:'🐉', atk:8, def:5, hp:25, rarity:'comum',
+    special:{name:'Crise Existencial', desc:'Dobra a própria defesa por 2 turnos.', trigger:'seu HP está abaixo de 30%'}},
+  {id:'ninja', name:'Ninja Sonolento', emoji:'🥷', atk:7, def:1, hp:14, rarity:'comum',
+    special:{name:'Ataque Sonâmbulo', desc:'Causa dano totalmente aleatório (1 a 15).', trigger:'ninguém usou nenhum item ainda na partida'}},
+  {id:'alien', name:'Alienígena Estagiário', emoji:'👽', atk:5, def:5, hp:20, rarity:'comum',
+    special:{name:'Abdução', desc:'Remove um item equipado do oponente.', trigger:'o oponente tem mais HP que você'}},
+  {id:'coelho', name:'Coelho Contador', emoji:'🐰', atk:4, def:4, hp:18, rarity:'comum',
+    special:{name:'Auditoria Fiscal', desc:'Reduz o ataque do oponente pela metade no turno dele.', trigger:'a rodada atual é múltipla de 4'}},
+
+  {id:'clara', name:'Clara Maluca', emoji:'🤪', atk:5, def:3, hp:19, rarity:'raro',
+    special:{name:'Crise de Riso', desc:'Reduz a defesa do oponente pela metade no turno dele.', trigger:'você tiver 2 ou mais itens equipados'}},
+  {id:'gabiru', name:'Gabiru Grandona', emoji:'🍔', atk:6, def:6, hp:24, rarity:'raro',
+    special:{name:'Sentou Que Já Era', desc:'Quanto mais machucado, mais dano extra causa.', trigger:'seu HP atual for menor que a metade do máximo'}},
+  {id:'marcelotte', name:'Marcelotte Suavinho', emoji:'😌', atk:4, def:5, hp:20, rarity:'raro',
+    special:{name:'Suavidade Zen', desc:'Cura 4 HP e ganha um escudo que reduz a próxima porrada pela metade.', trigger:'o oponente tiver o dobro do seu HP atual'}},
+  {id:'miguelotte', name:'Miguelotte Comilão', emoji:'🍗', atk:6, def:4, hp:23, rarity:'raro',
+    special:{name:'Comeu Tudo', desc:'Cura HP igual ao dano causado (efeito vampiro).', trigger:'seu HP estiver abaixo de 50%'}},
+  {id:'johnny', name:'Johnny Ladrão de Jogo', emoji:'🃏', atk:5, def:4, hp:18, rarity:'raro',
+    special:{name:'Roubo de Turno', desc:'Rouba um item guardado do inventário do oponente.', trigger:'o oponente tiver algum item guardado no inventário'}},
+  {id:'tutu', name:'Tutu Espião', emoji:'🕵️', atk:5, def:5, hp:19, rarity:'raro',
+    special:{name:'Modo Camuflagem', desc:'Fica invisível e esquiva 100% do próximo ataque recebido.', trigger:'for a primeira vez que ele ataca nesta partida'}},
+  {id:'bia', name:'Bia Princesinha', emoji:'👑', atk:4, def:7, hp:21, rarity:'raro',
+    special:{name:'Chilique Real', desc:'Bate o pé e aumenta o próprio dano em 50%.', trigger:'ela tiver pelo menos 1 item equipado'}},
+  {id:'israel', name:'Israel Malhador', emoji:'💪', atk:8, def:5, hp:24, rarity:'raro',
+    special:{name:'Bomba de Bíceps', desc:'Ganha +1 de ATAQUE permanente para o resto da partida.', trigger:'a rodada atual for múltipla de 5'}},
+  {id:'steph', name:'Steph Forte', emoji:'🏋️‍♀️', atk:7, def:6, hp:23, rarity:'raro',
+    special:{name:'Selfie de Vitória', desc:'Se o golpe for fatal, ainda comemora curando 10 HP.', trigger:'esse ataque for suficiente para derrotar o oponente'}},
+  {id:'gabi', name:'Gabi SuperStar', emoji:'⭐', atk:7, def:5, hp:22, rarity:'raro',
+    special:{name:'Photo Op', desc:'Causa dano extra baseado em quantos itens ela tem equipados.', trigger:'a soma do HP atual dos dois personagens em campo for maior que 30'}},
+  {id:'tiomiltonet', name:'Tio Milton ET', emoji:'👽🕺', atk:7, def:5, hp:22, rarity:'raro',
+    special:{name:'Discurso Sem Fim', desc:'Deixa o oponente tonto: ataque dele reduzido pela metade no próximo turno.', trigger:'a rodada atual for ÍMPAR'}},
+  {id:'salamandra5', name:'Salamandra de 5 Cabeças', emoji:'🐉🐍', atk:9, def:6, hp:26, rarity:'raro',
+    special:{name:'Multi-Mordida', desc:'As 5 cabeças mordem ao mesmo tempo, triplicando o dano.', trigger:'ela estiver com o HP cheio'}},
+  {id:'vovolecy', name:'Vovó Lecy Deusa', emoji:'👵✨', atk:10, def:8, hp:35, rarity:'lendario',
+    special:{name:'Bênção da Vovó Suprema', desc:'Dobra o próprio dano e cura todo o banco em 5 HP.', trigger:'ela estiver com o HP cheio'}},
+  {id:'voilka', name:'Vó Ilka Rompe Trovão', emoji:'⚡👵', atk:11, def:7, hp:32, rarity:'lendario',
+    special:{name:'Trovão da Avó Suprema', desc:'Causa +8 de dano elétrico extra e atordoa o oponente (perde a próxima jogada).', trigger:'a rodada atual for múltipla de 6'}},
+  {id:'michaeljackson', name:'Michael Jackson', emoji:'🕺✨', atk:9, def:6, hp:30, rarity:'lendario',
+    special:{name:'Moonwalk Hipnotizante', desc:'Cura 6 HP e reduz a defesa do oponente pela metade no turno dele.', trigger:'o dado da sorte (1-6) sair 5 ou mais'}},
+  {id:'pele', name:'Pelé', emoji:'⚽👑', atk:10, def:7, hp:30, rarity:'lendario',
+    special:{name:'Gol de Placa', desc:'Causa dano extra igual ao número da rodada atual.', trigger:'a rodada atual for PAR'}},
+
+  {id:'luagata', name:'Lua Gata Raivosa', emoji:'🐱🌙', atk:6, def:4, hp:19, rarity:'comum',
+    special:{name:'Arranhão da Lua Cheia', desc:'Causa +3 de dano extra.', trigger:'o dado da sorte (1-6) sair um número ÍMPAR'}},
+  {id:'duolingo', name:'Duolingo Nervoso', emoji:'🦉😡', atk:5, def:4, hp:18, rarity:'comum',
+    special:{name:'Notificação Ameaçadora', desc:'Causa +4 de dano por perseguir quem não pratica.', trigger:'a última ação do oponente NÃO foi um ataque'}},
+  {id:'sapo', name:'Sapo Sapato', emoji:'🐸👞', atk:4, def:5, hp:20, rarity:'comum',
+    special:{name:'Salto Escorregadio', desc:'Fica escorregadio e esquiva 100% do próximo ataque recebido.', trigger:'seu HP estiver abaixo de 40%'}},
+];
+
+/* ---------------- DADOS DO JOGO: ITENS ---------------- */
+
+const ITEM_POOL = [
+  {id:'panela', name:'Capacete de Panela', emoji:'🍳', type:'equip', mods:{def:4}, desc:'+4 Defesa'},
+  {id:'isopor', name:'Espada de Isopor', emoji:'⚔️', type:'equip', mods:{atk:3}, desc:'+3 Ataque'},
+  {id:'pocao', name:'Poção Misteriosa', emoji:'🧪', type:'consumable', desc:'Cura 8 HP na hora', heal:8},
+  {id:'oculos', name:'Óculos de Sol', emoji:'😎', type:'equip', mods:{atk:2, def:2}, desc:'+2 Ataque, +2 Defesa'},
+  {id:'meia', name:'Meia da Sorte', emoji:'🧦', type:'equip', mods:{luck:1}, desc:'+1 no dado da sorte'},
+  {id:'chapeu', name:'Chapéu de Mágico', emoji:'🎩', type:'equip', mods:{dodge:0.2}, desc:'20% de chance de esquivar de ataques'},
+  {id:'papelao', name:'Escudo de Papelão', emoji:'📦', type:'equip', mods:{def:6, atk:-1}, desc:'+6 Defesa, -1 Ataque'},
+  {id:'confete', name:'Bomba de Confete', emoji:'🎉', type:'consumable', desc:'Causa 6 de dano imediato ao oponente', damage:6},
+
+  {id:'bombasono', name:'Bomba de Sono', emoji:'💣', type:'consumable', desc:'O oponente pega no sono e perde a próxima jogada', skipOpponent:true},
+  {id:'raioeletrico', name:'Raio Elétrico', emoji:'⚡', type:'consumable', desc:'Causa 9 de dano imediato', damage:9, tag:'raio'},
+  {id:'chinelada', name:'Chinelada', emoji:'🩴', type:'consumable', desc:'Causa 7 de dano e quebra escudo/camuflagem do oponente', damage:7, removeDefenderBuffs:true},
+  {id:'dentesnenem', name:'Dentes de Mordida de Neném', emoji:'👶', type:'equip', mods:{atk:2, def:-1}, desc:'+2 Ataque, -1 Defesa'},
+  {id:'chocolate', name:'Chocolate Hipnotizante', emoji:'🍫', type:'consumable', desc:'Hipnotiza: ataque do oponente reduzido pela metade no próximo turno dele', atkReductionOpponent:1},
+  {id:'chapeuhp', name:'Chapéu do Harry Potter', emoji:'🧙', type:'equip', mods:{def:2, dodge:0.15}, desc:'+2 Defesa, +15% de esquiva'},
+  {id:'camisabarbie', name:'Camisa da Barbie', emoji:'👚', type:'equip', mods:{atk:3, regen:2}, desc:'+3 Ataque, cura 2 HP a cada turno'},
+  {id:'tampaprivada', name:'Tampa de Privada', emoji:'🚽', type:'equip', mods:{def:5}, desc:'+5 Defesa'},
+  {id:'garraslua', name:'Garras de Lua', emoji:'🌙', type:'equip', mods:{atk:4}, desc:'+4 Ataque'},
+  {id:'unhasgarotama', name:'Unhas de Garota Má', emoji:'💅', type:'equip', mods:{atk:3, dodge:0.05}, desc:'+3 Ataque, +5% de esquiva'},
+  {id:'vestidosexy', name:'Vestido Sexy', emoji:'👗', type:'equip', mods:{atk:2, def:2, luck:1}, desc:'+2 Ataque, +2 Defesa, +1 no dado da sorte'},
+  {id:'paletopeido', name:'Paletó Contra Peidos', emoji:'🧥', type:'equip', mods:{def:6}, desc:'+6 Defesa'},
+  {id:'pumstrogonoff', name:'Pum de Strogonoff', emoji:'💨', type:'consumable', desc:'Causa 4 de dano e enjoa o oponente (defesa reduzida no próximo turno dele)', damage:4, defReductionOpponent:1, tag:'pum'},
+  {id:'oculostiomilton', name:'Óculos de Tio Milton', emoji:'🕶️', type:'equip', mods:{luck:3}, desc:'+3 no dado da sorte'},
+  {id:'violaotiomilton', name:'Violão de Tio Milton', emoji:'🎸', type:'consumable', desc:'Uma canção relaxante cura 10 HP', heal:10},
+  {id:'mascaradinda', name:'Máscara de Teatro da Dinda', emoji:'🎭', type:'equip', mods:{dodge:0.2}, desc:'+20% de esquiva'},
+  {id:'cafeanapaula', name:'Café de Ana Paula', emoji:'☕', type:'consumable', desc:'Cura 6 HP e dá +2 de sorte permanente', heal:6, permanentLuck:2},
+  {id:'pumnuclear', name:'Pum de Bomba Nuclear', emoji:'☢️', type:'consumable', desc:'Dano devastador de 15, mas o recuo causa 3 de dano em você mesmo', damage:15, selfDamage:3, tag:'pum'},
+
+  {id:'cuecaantipum', name:'Cueca Anti-Pum', emoji:'🩲', type:'equip', mods:{resist:{pum:0.9}}, desc:'Reduz em 90% o dano de bombas de pum'},
+  {id:'calcinhaantipum', name:'Calcinha Anti-Pum', emoji:'👙', type:'equip', mods:{resist:{pum:0.9}}, desc:'Reduz em 90% o dano de bombas de pum'},
+  {id:'botaantiraio', name:'Bota Linda Anti-Raio', emoji:'👢', type:'equip', mods:{resist:{raio:0.85}}, desc:'Reduz em 85% o dano de ataques elétricos'},
+  {id:'sandaliaantiraio', name:'Sandália de Couro Anti-Raio', emoji:'👡', type:'equip', mods:{resist:{raio:0.85}}, desc:'Reduz em 85% o dano de ataques elétricos'},
+
+  {id:'faquinhaplastico', name:'Faquinha de Plástico', emoji:'🔪', type:'equip', mods:{atk:1}, desc:'+1 Ataque'},
+  {id:'marretinhaboladona', name:'Marretinha Boladona', emoji:'🔨', type:'equip', mods:{atk:5}, desc:'+5 Ataque'},
+  {id:'dentedelua', name:'Dente de Lua', emoji:'🌙🦷', type:'equip', mods:{atk:3}, desc:'+3 Ataque'},
+  {id:'dentaduravampiro', name:'Dentadura de Vampiro', emoji:'🧛', type:'equip', mods:{atk:4, regen:1}, desc:'+4 Ataque, cura 1 HP por turno'},
+  {id:'chapeubichao', name:'Chapéu de Bichão', emoji:'🎩🦁', type:'equip', mods:{atk:3, def:1}, desc:'+3 Ataque, +1 Defesa'},
+  {id:'canetadavo', name:'Caneta da Vó', emoji:'🖊️', type:'equip', mods:{atk:2, luck:1}, desc:'+2 Ataque, +1 no dado da sorte'},
+  {id:'celularquebrado', name:'Celular Quebrado', emoji:'📱', type:'equip', mods:{atk:2}, desc:'+2 Ataque'},
+  {id:'musculos', name:'Músculos', emoji:'💪', type:'equip', mods:{atk:4}, desc:'+4 Ataque'},
+  {id:'pernasfortes', name:'Pernas Fortes', emoji:'🦵', type:'equip', mods:{atk:3, dodge:0.05}, desc:'+3 Ataque, +5% de esquiva'},
+  {id:'bracosfortes', name:'Braços Fortes', emoji:'💪', type:'equip', mods:{atk:4}, desc:'+4 Ataque'},
+  {id:'maodesoquinho', name:'Mão de Soquinho', emoji:'👊', type:'equip', mods:{atk:2}, desc:'+2 Ataque'},
+  {id:'dedodecascudo', name:'Dedo de Cascudo', emoji:'👆', type:'equip', mods:{atk:3}, desc:'+3 Ataque'},
+  {id:'carinhoirritante', name:'Carinho Irritante', emoji:'🤏', type:'equip', mods:{atk:2, luck:1}, desc:'+2 Ataque, +1 no dado da sorte'},
+  {id:'vozassustadora', name:'Voz Assustadora', emoji:'📢', type:'equip', mods:{atk:3, dodge:0.05}, desc:'+3 Ataque, +5% de esquiva'},
+  {id:'mascaramau', name:'Máscara de Mau', emoji:'😈', type:'equip', mods:{atk:5, def:-1}, desc:'+5 Ataque, -1 Defesa'},
+  {id:'orelhasgato', name:'Orelhas de Gato', emoji:'🐱', type:'equip', mods:{atk:2, dodge:0.05}, desc:'+2 Ataque, +5% de esquiva'},
+  {id:'batomvermelho', name:'Batom Vermelho na Boca', emoji:'💋', type:'equip', mods:{atk:3, luck:1}, desc:'+3 Ataque, +1 no dado da sorte'},
+  {id:'maquiagemfatal', name:'Maquiagem Super Fatal', emoji:'💄', type:'equip', mods:{atk:5, luck:1}, desc:'+5 Ataque, +1 no dado da sorte'},
+
+  {id:'leitemaracuja', name:'Leite de Maracujá', emoji:'🥛', type:'consumable', desc:'Cura 9 HP na hora', heal:9},
+  {id:'nescau', name:'Nescau', emoji:'🍫', type:'consumable', desc:'Cura 7 HP na hora', heal:7},
+  {id:'wheyproteina', name:'Whey Proteína', emoji:'🥤', type:'consumable', desc:'Cura 5 HP e dá +1 de ataque permanente', heal:5, permanentAtk:1},
+  {id:'brocolis', name:'Brócolis', emoji:'🥦', type:'consumable', desc:'Cura 12 HP na hora (coma seus vegetais!)', heal:12},
+];
+
+/* ---------------- CONDIÇÕES E EFEITOS ESPECIAIS ---------------- */
+
+const conditionFns = {
+  batata: ctx => ctx.attacker.hp > 0 && ctx.attacker.hp % 2 === 0,
+  vovo: ctx => ctx.round % 3 === 0,
+  pombo: ctx => ctx.defender.equippedItems.length > 0,
+  capivara: ctx => ctx.attackerPlayer.lastAction !== 'attack',
+  robo: ctx => (totalStat(ctx.attacker,'atk') + totalStat(ctx.defender,'atk')) % 2 === 1,
+  gato: ctx => ctx.defenderPlayer.lastAction === 'swap',
+  unicornio: ctx => ctx.round % 2 === 0,
+  fantasma: ctx => ctx.dice >= 6,
+  dragao: ctx => ctx.attacker.hp < ctx.attacker.maxHp * 0.3,
+  ninja: ctx => !ctx.state.anyItemUsed,
+  alien: ctx => ctx.attacker.hp < ctx.defender.hp,
+  coelho: ctx => ctx.round % 4 === 0,
+
+  clara: ctx => ctx.attacker.equippedItems.length >= 2,
+  gabiru: ctx => ctx.attacker.hp < ctx.attacker.maxHp * 0.5,
+  marcelotte: ctx => ctx.defender.hp >= ctx.attacker.hp * 2,
+  miguelotte: ctx => ctx.attacker.hp < ctx.attacker.maxHp * 0.5,
+  johnny: ctx => ctx.defenderPlayer.inventory.length > 0,
+  tutu: ctx => !ctx.attacker._spyUsed,
+  bia: ctx => ctx.attacker.equippedItems.length >= 1,
+  israel: ctx => ctx.round % 5 === 0,
+  steph: ctx => ctx.damage.value >= ctx.defender.hp,
+  gabi: ctx => (ctx.attacker.hp + ctx.defender.hp) > 30,
+  vovolecy: ctx => ctx.attacker.hp === ctx.attacker.maxHp,
+
+  tiomiltonet: ctx => ctx.round % 2 === 1,
+  salamandra5: ctx => ctx.attacker.hp === ctx.attacker.maxHp,
+  voilka: ctx => ctx.round % 6 === 0,
+  michaeljackson: ctx => ctx.dice >= 5,
+  pele: ctx => ctx.round % 2 === 0,
+  luagata: ctx => ctx.dice % 2 === 1,
+  duolingo: ctx => ctx.defenderPlayer.lastAction !== 'attack',
+  sapo: ctx => ctx.attacker.hp < ctx.attacker.maxHp * 0.4,
+};
+
+const effectFns = {
+  batata: ctx => { ctx.damage.value *= 2; ctx.log(`Fritura Suprema! O dano dobrou!`, 'special'); },
+  vovo: ctx => { ctx.damage.value = Math.max(1, Math.round(totalStat(ctx.attacker,'atk'))); ctx.log(`Chinelada Divina ignora toda a defesa!`, 'special'); },
+  pombo: ctx => { ctx.damage.value *= 2; ctx.log(`Bicada Relâmpago acerta duas vezes!`, 'special'); },
+  capivara: ctx => { const before = ctx.attacker.hp; ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp + 5); ctx.log(`Paz Absoluta cura ${ctx.attacker.hp-before} de HP!`, 'heal'); },
+  robo: ctx => { ctx.defender.hp = Math.max(0, ctx.defender.hp - 3); ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp + 3); ctx.log(`Sugou Tudo! Roubou 3 de HP!`, 'special'); },
+  gato: ctx => { ctx.defenderPlayer.nextAttackNullified = true; ctx.log(`Objeção! O próximo ataque do oponente será anulado!`, 'special'); },
+  unicornio: ctx => { ctx.defender.status.poison = {turns:2, dmg:3}; ctx.log(`Arco-íris Venenoso envenena o alvo!`, 'special'); },
+  fantasma: ctx => { ctx.defenderPlayer.skipNext = true; ctx.log(`Susto Inesperado! O oponente vai perder a próxima jogada!`, 'special'); },
+  dragao: ctx => { ctx.attacker.status.defBoost = {turns:2}; ctx.log(`Crise Existencial dobra a própria defesa por 2 turnos!`, 'special'); },
+  ninja: ctx => { ctx.damage.value = 1 + Math.floor(Math.random()*15); ctx.log(`Ataque Sonâmbulo é totalmente aleatório!`, 'special'); },
+  alien: ctx => {
+    if(ctx.defender.equippedItems.length>0){
+      const removed = ctx.defender.equippedItems.pop();
+      ctx.log(`Abdução! ${removed.name} foi removido do oponente!`, 'special');
+    } else {
+      ctx.log(`Abdução tentou agir, mas o oponente não tinha itens.`, 'special');
+    }
+  },
+  coelho: ctx => { ctx.defender.status.atkReduction = {turns:1}; ctx.log(`Auditoria Fiscal reduz o ataque do oponente pela metade!`, 'special'); },
+
+  clara: ctx => { ctx.defender.status.defReduction = {turns:1}; ctx.log(`Crise de Riso! A defesa do oponente cai pela metade no turno dele!`, 'special'); },
+  gabiru: ctx => { const bonus = Math.round((ctx.attacker.maxHp - ctx.attacker.hp)/2); ctx.damage.value += bonus; ctx.log(`Sentou Que Já Era! +${bonus} de dano por estar machucado!`, 'special'); },
+  marcelotte: ctx => { const before=ctx.attacker.hp; ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp+4); ctx.attacker.status.shield = {mult:0.5}; ctx.log(`Suavidade Zen cura ${ctx.attacker.hp-before} HP e ativa um escudo!`, 'heal'); },
+  miguelotte: ctx => { ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp + ctx.damage.value); ctx.log(`Comeu Tudo! Curou HP igual ao dano causado!`, 'heal'); },
+  johnny: ctx => {
+    if(ctx.defenderPlayer.inventory.length>0){
+      const idx = Math.floor(Math.random()*ctx.defenderPlayer.inventory.length);
+      const stolen = ctx.defenderPlayer.inventory.splice(idx,1)[0];
+      ctx.attackerPlayer.inventory.push(stolen);
+      ctx.log(`Roubo de Turno! Levou ${stolen.name} do oponente!`, 'special');
+    } else {
+      ctx.log(`Roubo de Turno tentou agir, mas o oponente não tinha itens guardados.`, 'special');
+    }
+  },
+  tutu: ctx => { ctx.attacker.status.dodgeNext = true; ctx.attacker._spyUsed = true; ctx.log(`Modo Camuflagem ativado! Vai esquivar do próximo ataque recebido!`, 'special'); },
+  bia: ctx => { ctx.damage.value = Math.round(ctx.damage.value*1.5); ctx.log(`Chilique Real! Bateu o pé e aumentou o próprio dano em 50%!`, 'special'); },
+  israel: ctx => { ctx.attacker.atk += 1; ctx.log(`Bomba de Bíceps! Ataque aumentado permanentemente em +1!`, 'special'); },
+  steph: ctx => { ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp+10); ctx.log(`Selfie de Vitória! Comemorou curando 10 HP!`, 'heal'); },
+  gabi: ctx => { const bonus = ctx.attacker.equippedItems.length*2; ctx.damage.value += bonus; ctx.log(`Photo Op! +${bonus} de dano pelos itens equipados!`, 'special'); },
+  vovolecy: ctx => {
+    ctx.damage.value *= 2;
+    ctx.attackerPlayer.characters.forEach(c=>{ if(c!==ctx.attacker && c.hp>0) c.hp = Math.min(c.maxHp, c.hp+5); });
+    ctx.log(`Bênção da Vovó Suprema! Dano dobrado e todo o banco foi curado em 5 HP!`, 'special');
+  },
+
+  tiomiltonet: ctx => { ctx.defender.status.atkReduction = {turns:1}; ctx.log(`Discurso Sem Fim deixa o oponente tonto! Ataque reduzido no próximo turno!`, 'special'); },
+  salamandra5: ctx => { ctx.damage.value *= 3; ctx.log(`Multi-Mordida! As 5 cabeças atacam juntas, triplicando o dano!`, 'special'); },
+  voilka: ctx => { ctx.damage.value += 8; ctx.defenderPlayer.skipNext = true; ctx.log(`Trovão da Avó Suprema! +8 de dano e o oponente ficou atordoado!`, 'special'); },
+  michaeljackson: ctx => {
+    const before = ctx.attacker.hp;
+    ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp+6);
+    ctx.defender.status.defReduction = {turns:1};
+    ctx.log(`Moonwalk Hipnotizante cura ${ctx.attacker.hp-before} HP e reduz a defesa do oponente!`, 'heal');
+  },
+  pele: ctx => { const bonus = ctx.round; ctx.damage.value += bonus; ctx.log(`Gol de Placa! +${bonus} de dano baseado na rodada atual!`, 'special'); },
+  luagata: ctx => { ctx.damage.value += 3; ctx.log(`Arranhão da Lua Cheia! +3 de dano!`, 'special'); },
+  duolingo: ctx => { ctx.damage.value += 4; ctx.log(`Notificação Ameaçadora! +4 de dano, ninguém escapa da lição!`, 'special'); },
+  sapo: ctx => { ctx.attacker.status.dodgeNext = true; ctx.log(`Salto Escorregadio! Vai esquivar do próximo ataque recebido!`, 'special'); },
+};
+
+/* ---------------- HISTÓRICO / PÓDIO (localStorage) ---------------- */
+
+const HISTORY_KEY = 'cartasMalucasHistoryV1';
+let history = {battles:0, players:{}, log:[]};
+
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if(raw) history = JSON.parse(raw);
+  }catch(e){ history = {battles:0, players:{}, log:[]}; }
+  if(!history.players) history.players = {};
+  if(!history.log) history.log = [];
+  if(!history.battles) history.battles = 0;
+}
+
+function saveHistory(){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }catch(e){}
+}
+
+function recordBattle(name1, name2, winnerName){
+  history.battles++;
+  [name1,name2].forEach(n=>{
+    if(!history.players[n]) history.players[n] = {wins:0, battles:0};
+    history.players[n].battles++;
+  });
+  history.players[winnerName].wins++;
+  history.log.unshift({date:new Date().toLocaleString('pt-BR'), p1:name1, p2:name2, winner:winnerName});
+  if(history.log.length>50) history.log.length = 50;
+  saveHistory();
+}
+
+function renderHistoryPanel(){
+  const el = document.getElementById('historyPanel');
+  if(!el) return;
+  const names = Object.keys(history.players);
+  const ranked = names.map(n => {
+    const p = history.players[n];
+    return {name:n, wins:p.wins, battles:p.battles, rate: p.battles ? Math.round(p.wins/p.battles*100) : 0};
+  }).sort((a,b) => b.wins - a.wins || b.rate - a.rate);
+
+  let html = `<div class="history-box">
+      <h3>🏆 Pódio de Melhores Jogadores</h3>
+      <div class="pill" style="display:block; text-align:center; margin:0 auto 12px;">Total de batalhas: ${history.battles}</div>`;
+
+  if(ranked.length === 0){
+    html += `<p class="hint" style="text-align:center;">Nenhuma batalha registrada ainda. Jogue para entrar no pódio!</p>`;
+  } else {
+    const medals = ['🥇','🥈','🥉'];
+    html += `<div class="podium">`;
+    ranked.slice(0,3).forEach((p,i) => {
+      html += `<div class="podium-item"><span class="medal">${medals[i]}</span><b>${p.name}</b><br>${p.wins} vitórias em ${p.battles} batalhas<br>(${p.rate}% de aproveitamento)</div>`;
+    });
+    html += `</div>`;
+    if(ranked.length>3){
+      html += `<details><summary>Ver todos os jogadores (${ranked.length})</summary><ul class="rank-list">` +
+        ranked.map(p=>`<li>${p.name} — ${p.wins} vitórias / ${p.battles} batalhas (${p.rate}%)</li>`).join('') +
+        `</ul></details>`;
+    }
+  }
+  if(history.battles>0){
+    html += `<div style="text-align:center; margin-top:10px;"><button class="btn-cancel" onclick="clearHistory()" style="padding:6px 14px; border-radius:8px;">🗑️ Limpar histórico</button></div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function clearHistory(){
+  if(!confirm('Tem certeza que deseja apagar todo o histórico e pódio?')) return;
+  history = {battles:0, players:{}, log:[]};
+  saveHistory();
+  renderHistoryPanel();
+}
+
+/* ---------------- ESTADO DA PARTIDA ---------------- */
+
+let state = null;
+
+function rnd(n){ return Math.floor(Math.random()*n); }
+function pick(arr){ return arr[rnd(arr.length)]; }
+
+function weightedSampleUnique(arr, n){
+  const pool = [...arr];
+  const out = [];
+  for(let i=0; i<n && pool.length; i++){
+    const totalWeight = pool.reduce((s,c) => s + RARITY[c.rarity].weight, 0);
+    let r = Math.random()*totalWeight;
+    let idx = 0;
+    for(; idx<pool.length-1; idx++){
+      r -= RARITY[pool[idx].rarity].weight;
+      if(r<=0) break;
+    }
+    out.push(pool.splice(idx,1)[0]);
+  }
+  return out;
+}
+
+function sampleUnique(arr, n){
+  const copy = [...arr]; const out=[];
+  for(let i=0;i<n && copy.length;i++){ out.push(copy.splice(rnd(copy.length),1)[0]); }
+  return out;
+}
+
+function drawPlayerCharacters(){
+  const pool = [...CHAR_POOL];
+  const rareOrAbove = pool.filter(c => c.rarity==='raro' || c.rarity==='lendario');
+  const guaranteed = weightedSampleUnique(rareOrAbove, 1);
+  const remainingPool = pool.filter(c => !guaranteed.includes(c));
+  const rest = weightedSampleUnique(remainingPool, 2);
+  return [...guaranteed, ...rest];
+}
+
+function makeCharInstance(def){
+  return {
+    id: def.id, name: def.name, emoji: def.emoji,
+    atk: def.atk, def: def.def, maxHp: def.hp, hp: def.hp,
+    rarity: def.rarity, special: def.special,
+    equippedItems: [],
+    status: {},
+    _spyUsed: false,
+  };
+}
+
+function makePlayer(name, idx){
+  const chars = drawPlayerCharacters().map(makeCharInstance);
+  const items = sampleUnique(ITEM_POOL, 2);
+  return {
+    idx, name,
+    characters: chars,
+    activeIndex: 0,
+    inventory: items,
+    lastAction: null,
+    skipNext: false,
+    nextAttackNullified: false,
+    lost: false,
+  };
+}
+
+let pendingPlayers = null;
+let pickStep = 0;
+
+function startFromSetup(){
+  const n1 = document.getElementById('p1NameInput').value.trim() || 'Jogador 1';
+  const n2 = document.getElementById('p2NameInput').value.trim() || 'Jogador 2';
+  pendingPlayers = [makePlayer(n1, 0), makePlayer(n2, 1)];
+  pickStep = 0;
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('pickScreen').style.display = 'block';
+  renderPickScreen();
+}
+
+function renderPickScreen(){
+  const player = pendingPlayers[pickStep];
+  document.getElementById('pickPlayerName').textContent = player.name;
+  const el = document.getElementById('pickBoard');
+  el.innerHTML = player.characters.map((c, idx) => `
+    <div class="active-card pick-card">
+      <span class="emoji">${c.emoji}</span>
+      <div class="card-name">${c.name}</div>${rarityTagHtml(c)}
+      <div class="stat-row">
+        <span class="stat">⚔️ ATK ${c.atk}</span>
+        <span class="stat">🛡️ DEF ${c.def}</span>
+        <span class="stat">❤️ ${c.hp}/${c.maxHp}</span>
+      </div>
+      <div class="special-box"><b>${c.special.name}:</b> ${c.special.desc}<br><i>Ativa se: ${c.special.trigger}</i></div>
+      <button class="newgame" style="margin-top:10px; width:100%;" onclick="choosePick(${idx})">✅ Começar com ${c.name}</button>
+    </div>`).join('');
+}
+
+function choosePick(idx){
+  pendingPlayers[pickStep].activeIndex = idx;
+  pickStep++;
+  if(pickStep < pendingPlayers.length){
+    renderPickScreen();
+  } else {
+    finalizeGameStart();
+  }
+}
+
+function finalizeGameStart(){
+  document.getElementById('pickScreen').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  state = {
+    round: 1,
+    currentPlayer: 0,
+    players: pendingPlayers,
+    log: [],
+    gameOver: false,
+    winner: null,
+    anyItemUsed: false,
+    pendingMode: null,
+  };
+  pendingPlayers = null;
+  pushLog('🎮 Novo jogo iniciado! Que vença o personagem mais maluco.');
+  render();
+}
+
+function backToSetup(){
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'block';
+  renderHistoryPanel();
+}
+
+function getActive(player){ return player.characters[player.activeIndex]; }
+
+function totalStat(char, stat){
+  let base = char[stat] || 0;
+  for(const it of char.equippedItems){
+    if(it.mods && it.mods[stat]) base += it.mods[stat];
+  }
+  if(stat==='def'){
+    if(char.status.defBoost) base *= 2;
+    if(char.status.defReduction) base *= 0.5;
+  }
+  if(stat==='atk' && char.status.atkReduction) base *= 0.5;
+  return base;
+}
+
+function totalResist(char, tag){
+  let r = 0;
+  for(const it of char.equippedItems){
+    if(it.mods && it.mods.resist && it.mods.resist[tag]){
+      r = Math.max(r, it.mods.resist[tag]);
+    }
+  }
+  return Math.min(r, 0.95);
+}
+
+function pushLog(msg, kind){
+  state.log.push({msg, kind: kind||'', round: state.round});
+  if(state.log.length>200) state.log.shift();
+}
+
+function rollDice(char){
+  return 1 + rnd(6) + totalStat(char,'luck');
+}
+
+/* ---------------- AÇÕES ---------------- */
+
+function beginTurnEffects(player){
+  const active = getActive(player);
+  if(!active || player.lost) return;
+  if(active.status.poison){
+    active.hp = Math.max(0, active.hp - active.status.poison.dmg);
+    pushLog(`☠️ ${active.name} sofre ${active.status.poison.dmg} de dano de veneno!`, 'dmg');
+    active.status.poison.turns--;
+    if(active.status.poison.turns<=0) delete active.status.poison;
+    checkDefeat(player);
+  }
+  const active2 = getActive(player);
+  if(active2 && active2.hp>0){
+    const regen = totalStat(active2,'regen');
+    if(regen>0){
+      const before = active2.hp;
+      active2.hp = Math.min(active2.maxHp, active2.hp + regen);
+      if(active2.hp>before) pushLog(`💚 ${active2.name} regenera ${active2.hp-before} HP!`, 'heal');
+    }
+  }
+}
+
+function endTurnStatusDecay(player){
+  const active = getActive(player);
+  if(!active) return;
+  if(active.status.defBoost){
+    active.status.defBoost.turns--;
+    if(active.status.defBoost.turns<=0) delete active.status.defBoost;
+  }
+  if(active.status.atkReduction){
+    active.status.atkReduction.turns--;
+    if(active.status.atkReduction.turns<=0) delete active.status.atkReduction;
+  }
+  if(active.status.defReduction){
+    active.status.defReduction.turns--;
+    if(active.status.defReduction.turns<=0) delete active.status.defReduction;
+  }
+}
+
+function doAttack(playerIdx){
+  if(state.gameOver) return;
+  const player = state.players[playerIdx];
+  const opp = state.players[1-playerIdx];
+  if(player.skipNext){
+    pushLog(`😱 ${player.name} está assustado demais e perde a vez!`, 'special');
+    player.skipNext = false;
+    endTurn(playerIdx, 'skip');
+    return;
+  }
+  const attacker = getActive(player);
+  const defender = getActive(opp);
+
+  if(defender.status.dodgeNext){
+    pushLog(`🕵️ ${defender.name} está em Modo Camuflagem e esquiva automaticamente!`);
+    delete defender.status.dodgeNext;
+    endTurn(playerIdx, 'attack');
+    return;
+  }
+
+  const dodgeChance = totalStat(defender,'dodge');
+  if(Math.random() < dodgeChance){
+    pushLog(`💨 ${defender.name} esquivou completamente do ataque!`);
+    endTurn(playerIdx, 'attack');
+    return;
+  }
+
+  let atkVal = totalStat(attacker,'atk');
+  let defVal = totalStat(defender,'def');
+  let dmg = Math.max(1, Math.round(atkVal - defVal/2));
+  const dmgRef = {value: dmg};
+  const dice = rollDice(attacker);
+
+  const ctx = {
+    attacker, defender, attackerPlayer: player, defenderPlayer: opp,
+    round: state.round, dice, damage: dmgRef, log: pushLog, state,
+  };
+
+  if(conditionFns[attacker.id] && conditionFns[attacker.id](ctx)){
+    pushLog(`✨ Poder especial de ${attacker.name}: "${attacker.special.name}"!`, 'special');
+    effectFns[attacker.id](ctx);
+  }
+
+  if(opp.nextAttackNullified){
+    pushLog(`🚫 O ataque de ${attacker.name} foi anulado pela Objeção do Gato Advogado!`, 'special');
+    opp.nextAttackNullified = false;
+    dmgRef.value = 0;
+  }
+
+  if(defender.status.shield){
+    const before = dmgRef.value;
+    dmgRef.value = Math.round(dmgRef.value * defender.status.shield.mult);
+    delete defender.status.shield;
+    pushLog(`🛡️ Escudo de ${defender.name} reduziu o dano de ${before} para ${dmgRef.value}!`);
+  }
+
+  if(dmgRef.value > 0){
+    defender.hp = Math.max(0, defender.hp - dmgRef.value);
+    pushLog(`⚔️ ${attacker.name} ataca ${defender.name} causando ${dmgRef.value} de dano!`, 'dmg');
+  }
+
+  checkDefeat(opp);
+  endTurn(playerIdx, 'attack');
+}
+
+function checkDefeat(player){
+  if(state.gameOver) return;
+  const active = getActive(player);
+  if(active.hp <= 0){
+    pushLog(`💀 ${active.name} foi derrotado!`);
+    const nextAlive = player.characters.find(c => c.hp > 0);
+    if(nextAlive){
+      player.activeIndex = player.characters.indexOf(nextAlive);
+      pushLog(`👉 ${player.name} envia ${nextAlive.name} para o campo de batalha!`);
+    } else {
+      player.lost = true;
+      state.gameOver = true;
+      state.winner = 1 - player.idx;
+      const winnerName = state.players[state.winner].name;
+      recordBattle(state.players[0].name, state.players[1].name, winnerName);
+      pushLog(`🏆 ${winnerName} venceu a batalha!`, 'special');
+    }
+  }
+}
+
+function startSwap(playerIdx){
+  if(state.gameOver) return;
+  state.pendingMode = 'swap';
+  render();
+}
+
+function doSwap(playerIdx, charIndex){
+  const player = state.players[playerIdx];
+  const target = player.characters[charIndex];
+  if(!target || target.hp<=0 || charIndex===player.activeIndex) return;
+  player.activeIndex = charIndex;
+  pushLog(`🔄 ${player.name} troca para ${target.name}!`);
+  state.pendingMode = null;
+  endTurn(playerIdx, 'swap');
+}
+
+function startItem(playerIdx){
+  if(state.gameOver) return;
+  const player = state.players[playerIdx];
+  if(player.inventory.length===0) return;
+  state.pendingMode = 'item';
+  render();
+}
+
+function doUseItem(playerIdx, itemIndex){
+  const player = state.players[playerIdx];
+  const opp = state.players[1-playerIdx];
+  const item = player.inventory[itemIndex];
+  if(!item) return;
+  const active = getActive(player);
+
+  if(item.type==='equip'){
+    if(active.equippedItems.some(e => e.id===item.id)){
+      pushLog(`🚫 ${active.name} já está usando ${item.name}! Não dá pra equipar dois iguais.`);
+      render();
+      return;
+    }
+    active.equippedItems.push(item);
+    pushLog(`🎒 ${player.name} equipa ${item.name} em ${active.name}! (${item.desc})`);
+  } else if(item.type==='consumable'){
+    if(item.heal){
+      const before = active.hp;
+      active.hp = Math.min(active.maxHp, active.hp + item.heal);
+      pushLog(`🧪 ${player.name} usa ${item.name} e cura ${active.hp-before} HP!`, 'heal');
+    }
+    if(item.permanentLuck){
+      active.luck = (active.luck||0) + item.permanentLuck;
+      pushLog(`☕ ${active.name} ganha +${item.permanentLuck} de sorte permanente!`, 'special');
+    }
+    if(item.permanentAtk){
+      active.atk += item.permanentAtk;
+      pushLog(`💪 ${active.name} ganha +${item.permanentAtk} de ataque permanente!`, 'special');
+    }
+    if(item.damage){
+      const dTarget = getActive(opp);
+      let dmg = item.damage;
+      if(item.tag){
+        const resist = totalResist(dTarget, item.tag);
+        if(resist>0){
+          const before = dmg;
+          dmg = Math.max(0, Math.round(dmg * (1-resist)));
+          pushLog(`🛡️ ${dTarget.name} resistiu! Dano de ${item.name} reduzido de ${before} para ${dmg}!`);
+        }
+      }
+      dTarget.hp = Math.max(0, dTarget.hp - dmg);
+      pushLog(`💥 ${player.name} usa ${item.name} causando ${dmg} de dano em ${dTarget.name}!`, 'dmg');
+      checkDefeat(opp);
+    }
+    if(item.selfDamage){
+      active.hp = Math.max(0, active.hp - item.selfDamage);
+      pushLog(`🔥 O recuo de ${item.name} causa ${item.selfDamage} de dano em ${active.name}!`, 'dmg');
+      checkDefeat(player);
+    }
+    if(item.skipOpponent){
+      opp.skipNext = true;
+      pushLog(`😴 ${item.name} faz o oponente pegar no sono e perder a próxima jogada!`, 'special');
+    }
+    if(item.atkReductionOpponent){
+      const oppActive = getActive(opp);
+      oppActive.status.atkReduction = {turns:item.atkReductionOpponent};
+      pushLog(`🍫 ${item.name} reduz o ataque de ${oppActive.name} no próximo turno!`, 'special');
+    }
+    if(item.defReductionOpponent){
+      const oppActive = getActive(opp);
+      oppActive.status.defReduction = {turns:item.defReductionOpponent};
+      pushLog(`💨 ${item.name} reduz a defesa de ${oppActive.name} no próximo turno!`, 'special');
+    }
+    if(item.removeDefenderBuffs){
+      const oppActive = getActive(opp);
+      if(oppActive.status.shield || oppActive.status.dodgeNext){
+        delete oppActive.status.shield;
+        delete oppActive.status.dodgeNext;
+        pushLog(`💢 ${item.name} quebrou as defesas especiais de ${oppActive.name}!`, 'special');
+      }
+    }
+  }
+
+  player.inventory.splice(itemIndex,1);
+  state.anyItemUsed = true;
+  state.pendingMode = null;
+  endTurn(playerIdx, 'item');
+}
+
+function cancelPending(){
+  state.pendingMode = null;
+  render();
+}
+
+function endTurn(playerIdx, actionType){
+  const player = state.players[playerIdx];
+  player.lastAction = actionType;
+  state.pendingMode = null;
+  endTurnStatusDecay(player);
+
+  if(state.gameOver){ render(); return; }
+
+  const nextIdx = 1-playerIdx;
+  state.currentPlayer = nextIdx;
+  if(nextIdx===0){
+    state.round++;
+    for(const p of state.players){
+      if(p.lost) continue;
+      const found = [pick(ITEM_POOL), pick(ITEM_POOL)];
+      found.forEach(it => p.inventory.push(it));
+      pushLog(`🎁 ${p.name} encontrou 2 itens novos: ${found[0].name} e ${found[1].name}!`);
+    }
+  }
+  beginTurnEffects(state.players[nextIdx]);
+  render();
+}
+
+/* ---------------- RENDER ---------------- */
+
+function hpPct(c){ return Math.max(0, Math.round((c.hp/c.maxHp)*100)); }
+
+function statusTagsHtml(c){
+  const tags = [];
+  if(c.status.poison) tags.push(`<span class="status-tag">☠️ Veneno x${c.status.poison.turns}</span>`);
+  if(c.status.defBoost) tags.push(`<span class="status-tag">🛡️ Defesa dobrada x${c.status.defBoost.turns}</span>`);
+  if(c.status.atkReduction) tags.push(`<span class="status-tag">📉 Ataque reduzido</span>`);
+  if(c.status.defReduction) tags.push(`<span class="status-tag">📉 Defesa reduzida</span>`);
+  if(c.status.shield) tags.push(`<span class="status-tag">🛡️ Escudo ativo</span>`);
+  if(c.status.dodgeNext) tags.push(`<span class="status-tag">🕵️ Camuflado</span>`);
+  return tags.length ? `<div class="status-tags">${tags.join('')}</div>` : '';
+}
+
+function rarityTagHtml(c){
+  const r = RARITY[c.rarity];
+  if(!r) return '';
+  return `<span class="rarity-tag" style="background:${r.color}; color:${r.textColor};">${r.label}</span>`;
+}
+
+function renderPlayerPanel(player){
+  const isTurn = state.currentPlayer===player.idx && !state.gameOver;
+  const active = getActive(player);
+  const pctHp = hpPct(active);
+
+  let html = `<div class="player-panel ${isTurn?'active-turn':''}">`;
+  html += `<div class="player-header"><b>${player.name}</b>${isTurn?'<span class="turn-tag">SUA VEZ</span>':''}</div>`;
+
+  html += `<div class="active-card">
+      <span class="emoji">${active.emoji}</span>
+      <div class="card-name">${active.name}</div>${rarityTagHtml(active)}
+      <div class="stat-row">
+        <span class="stat">⚔️ ATK ${totalStat(active,'atk')}</span>
+        <span class="stat">🛡️ DEF ${totalStat(active,'def')}</span>
+        <span class="stat">❤️ ${active.hp}/${active.maxHp}</span>
+      </div>
+      <div class="hpbar-wrap"><div class="hpbar ${pctHp<30?'low':''}" style="width:${pctHp}%"></div></div>
+      ${statusTagsHtml(active)}
+      <div class="special-box"><b>${active.special.name}:</b> ${active.special.desc}<br>
+        <i>Ativa se: ${active.special.trigger}</i></div>
+      ${active.equippedItems.length ? `<div class="equipped-list">Equipado: ${active.equippedItems.map(i=>i.emoji+' '+i.name).join(', ')}</div>` : ''}
+    </div>`;
+
+  html += `<div class="bench">`;
+  player.characters.forEach((c, idx) => {
+    if(idx===player.activeIndex) return;
+    const dead = c.hp<=0;
+    const selectable = isTurn && state.pendingMode==='swap' && !dead;
+    html += `<div class="bench-card ${selectable?'selectable':''} ${dead?'dead':''}"
+        ${selectable ? `onclick="doSwap(${player.idx}, ${idx})"` : ''}
+        title="${c.special.name}: ${c.special.desc} (Ativa se: ${c.special.trigger})">
+        <span class="emoji">${c.emoji}</span>${c.name}<br>${rarityTagHtml(c)}<br>${dead?'Derrotado':'❤️ '+c.hp+'/'+c.maxHp}
+      </div>`;
+  });
+  html += `</div>`;
+
+  if(player.inventory.length){
+    html += `<div class="inventory">`;
+    player.inventory.forEach((it, idx) => {
+      const alreadyEquipped = it.type==='equip' && active.equippedItems.some(e => e.id===it.id);
+      const selectable = isTurn && state.pendingMode==='item' && !alreadyEquipped;
+      html += `<div class="item-card ${selectable?'selectable':''} ${alreadyEquipped?'dead':''}"
+          ${selectable ? `onclick="doUseItem(${player.idx}, ${idx})"` : ''}
+          title="${alreadyEquipped ? 'Já equipado neste personagem' : it.desc}">
+          <span class="emoji">${it.emoji}</span>${it.name}${alreadyEquipped ? '<br>(já equipado)' : ''}
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  const canAct = isTurn && state.pendingMode===null;
+  const hasBenchAlive = player.characters.some((c,idx)=>idx!==player.activeIndex && c.hp>0);
+  html += `<div class="actions">`;
+  if(state.pendingMode && isTurn){
+    html += `<button class="btn-cancel" onclick="cancelPending()">✖ Cancelar</button>`;
+  } else {
+    html += `<button class="btn-attack" ${canAct?'':'disabled'} onclick="doAttack(${player.idx})">⚔️ Atacar</button>`;
+    html += `<button class="btn-swap" ${canAct && hasBenchAlive?'':'disabled'} onclick="startSwap(${player.idx})">🔄 Trocar</button>`;
+    html += `<button class="btn-item" ${canAct && player.inventory.length?'':'disabled'} onclick="startItem(${player.idx})">🎒 Item</button>`;
+  }
+  html += `</div>`;
+
+  let hint = '';
+  if(isTurn && state.pendingMode==='swap') hint = 'Escolha um personagem no banco para entrar em campo.';
+  if(isTurn && state.pendingMode==='item') hint = 'Escolha um item para usar ou equipar.';
+  if(player.skipNext && isTurn) hint = '😱 Assustado! Ataque para perder a vez.';
+  html += `<div class="hint">${hint}</div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function render(){
+  document.getElementById('roundNum').textContent = state.round;
+  document.getElementById('board').innerHTML =
+    renderPlayerPanel(state.players[0]) + renderPlayerPanel(state.players[1]);
+
+  const logBox = document.getElementById('logBox');
+  logBox.innerHTML = state.log.slice().reverse().map(l =>
+    `<div class="log-line ${l.kind}">[R${l.round}] ${l.msg}</div>`).join('');
+
+  const goBox = document.getElementById('gameoverBox');
+  if(state.gameOver){
+    goBox.innerHTML = `<div class="gameover">🏆 ${state.players[state.winner].name} venceu o duelo maluco! 🏆<br>
+      <button class="newgame" style="margin-top:10px;" onclick="backToSetup()">🔄 Nova Batalha</button></div>`;
+  } else {
+    goBox.innerHTML = '';
+  }
+}
+
+/* ---------------- BOOT ---------------- */
+
+function initApp(){
+  loadHistory();
+  renderHistoryPanel();
+}
+
+initApp();
+</script>
+</body>
+</html>
